@@ -32,14 +32,35 @@ def hii():
     return str(post_id)
 
 '''
+Creates a new song from the response and adds it to the db.
+Also downloads the song
+'''
+def addSong(response, phoneNumber):
+    song = Song.from_export(response, gsClient.connection)
+    newSong = {"phoneNumber" : phoneNumber,
+               "date" : datetime.datetime.utcnow(),
+               "link" : song.stream.url,
+               "songId" : song.id,
+               "songName" :song.name,
+               "duration" : song.duration,
+               "artistName" : song.artist.name,
+               "playlist" : "default"}
+
+    songId = mongo.db.songs.insert(newSong)
+    
+    #download the song
+    song.download(song_name = song.id + "-" + phoneNumber)
+    return song.id
+
+'''
 query - query for song to search
 phoneNumber - phone number who is inputting that song
 
 Gets the first song to search for and adds it to playlist db.
 Downloads the song in ~/Music directory with name songId-phoneumber.mp3
 '''
-@app.route('/inputSong')
-def inputSong():
+@app.route('/queryAndAddSong')
+def inputSongqueryAndAddSong():
     songToSearch = request.values.get('query')
     phoneNumber = request.values.get('phoneNumber')
     found = False
@@ -49,23 +70,19 @@ def inputSong():
         songToPlay = song
         break
     if found:
-        newSong = {"phoneNumber" : phoneNumber,
-                   "date" : datetime.datetime.utcnow(),
-                   "link" : songToPlay.stream.url,
-                   "songId" : songToPlay.id,
-                   "songName" :songToPlay.name,
-                   "duration" : songToPlay.duration,
-                   "artistName" : songToPlay.artist.name,
-                   "playlist" : "default",
-                   "query" : request.values.get('query')}
-
-        songId = mongo.db.songs.insert(newSong)
-
-        #download the song
-        songToPlay.download(song_name = songToPlay.id + "-" + phoneNumber)
-        return songToPlay.id
+        return addSong(songToPlay.export(), phoneNumber)
     else:
         return "Failed to find song"
+
+'''
+Adds a search song to the db
+This is a post request. Assumes post has one key, which is song, which
+is the exported version of Grooveshark.Song object
+'''
+@app.route('/addSearchSong', methods=['POST'])
+def addSearchSong():
+    addSong(json.loads(request.form['song']), "6666666666")
+    return "success"
 
 '''
 query = Song to query for
@@ -80,13 +97,7 @@ def querySong():
     songs = gsClient.search(query, gsClient.SONGS)
     result = []
     for song in songs:
-        jsoned_song = {"songId" : song.id,
-                       "songName" : song.name,
-                       "popularity" : song.popularity,
-                       "link" : song.stream.url,
-                       "duration" : song.duration,
-                       "artistName" : song.artist.name}
-        result.append(jsoned_song)
+        result.append(song.export())
     return json.dumps(result)
     
 '''
