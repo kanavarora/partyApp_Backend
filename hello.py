@@ -31,9 +31,15 @@ def hii():
     post_id = mongo.db.abc.find_one()
     return str(post_id)
 
+@app.route('/downloadSong', methods=['POST'])
+def downloadSong():
+    song = Song.from_export(json.loads(request.form['song']), gsClient.connection)
+    song.download(song_name = song.id + "-" + request.form['phoneNumber'])
+    return song.id
+
 '''
 Creates a new song from the response and adds it to the db.
-Also downloads the song
+Also downloads the song. Response is a python data structure
 '''
 def addSong(response, phoneNumber):
     song = Song.from_export(response, gsClient.connection)
@@ -44,13 +50,18 @@ def addSong(response, phoneNumber):
                "songName" :song.name,
                "duration" : song.duration,
                "artistName" : song.artist.name,
-               "playlist" : "default"}
+               "playlist" : "default",
+               "serialized" : song.export()}
 
     songId = mongo.db.songs.insert(newSong)
+    return songId
     
     #download the song
-    song.download(song_name = song.id + "-" + phoneNumber)
-    return song.id
+    #return downloadSong(response)
+
+@app.route('/addTwilioSong', methods=['POST'])
+def addTwilioSong():
+    return addSong(json.loads(request.form['song']), request.form['phoneNumber'])
 
 '''
 query - query for song to search
