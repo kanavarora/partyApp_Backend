@@ -1,6 +1,7 @@
 import os
 from flask import Flask, request, redirect, session
-from flask.ext.pymongo import PyMongo
+#from flask.ext.pymongo import PyMongo
+import pymongo
 import db
 import datetime
 from bson import json_util
@@ -12,7 +13,19 @@ import subprocess
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
-mongo = PyMongo(app)
+#mongo = PyMongo(app)
+MONGO_URL = os.environ.get('MONGOHQ_URL')
+ 
+if MONGO_URL:
+    # Get a connection
+    conn = pymongo.Connection(MONGO_URL)
+    
+    # Get the database
+    db = conn[urlparse(MONGO_URL).path[1:]]
+else:
+    # Not on an app with the MongoHQ add-on, do some localhost action
+    conn = pymongo.Connection('localhost', 27017)
+    db = conn['someapps-db']
 
 
 gsClient = Client()
@@ -23,12 +36,12 @@ gsClient.init_queue()
 @app.route('/')
 def hello():
     post = {"test" : "tes1"}
-    mongo.db.abc.insert(post)
+    db.abc.insert(post)
     return 'Hello World!'
 
 @app.route('/ooh')
 def hii():
-    post_id = mongo.db.abc.find_one()
+    post_id = db.abc.find_one()
     return str(post_id)
 
 @app.route('/downloadSong', methods=['POST'])
@@ -53,7 +66,7 @@ def addSong(response, phoneNumber):
                "playlist" : "default",
                "serialized" : song.export()}
 
-    songId = mongo.db.songs.insert(newSong)
+    songId = db.songs.insert(newSong)
     return songId
     
     #download the song
@@ -117,7 +130,7 @@ TOOD: drop only by playlist, should same as deleting a playlist
 '''
 @app.route('/dropDb')
 def dropDb():
-    mongo.db.songs.drop()
+    db.songs.drop()
     return "success"
 
 '''
@@ -130,7 +143,7 @@ in Musics directory
 '''
 @app.route('/getPlayList')
 def getPlayList():
-    songs = mongo.db.songs.find({"playlist" : "default"}).sort("date", 1)
+    songs = db.songs.find({"playlist" : "default"}).sort("date", 1)
     res = []
     for song in songs:
         res.append(song)
