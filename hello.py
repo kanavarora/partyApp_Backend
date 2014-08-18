@@ -6,6 +6,7 @@ import pymongo
 import datetime
 from bson import json_util
 import json
+from urlparse import urlparse
 from grooveshark import Client
 from grooveshark.classes.song import Song
 
