@@ -45,6 +45,10 @@ def hii():
     post_id = db.abc.find_one()
     return str(post_id)
 
+'''
+Only to be called from localhost verison of the app. NOTHING ELSE.
+Downloads the song in ~/Music directory with name songId-phoneumber.mp3
+'''
 @app.route('/downloadSong', methods=['POST'])
 def downloadSong():
     song = Song.from_export(json.loads(request.form['song']), gsClient.connection)
@@ -53,7 +57,7 @@ def downloadSong():
 
 '''
 Creates a new song from the response and adds it to the db.
-Also downloads the song. Response is a python data structure
+Response is a python data structure
 '''
 def addSong(response, phoneNumber):
     song = Song.from_export(response, gsClient.connection)
@@ -68,11 +72,16 @@ def addSong(response, phoneNumber):
                "serialized" : song.export()}
 
     songId = db.songs.insert(newSong)
-    return songId
+    return str(songId)
     
     #download the song
     #return downloadSong(response)
 
+'''
+To be called from twilio services. Its a post call with two parameters
+song - Jsoned version of grooveshark.Song.export() ie. json.dumps(song.export())
+phoneNumber - String of the phone number which sent the request.
+'''
 @app.route('/addTwilioSong', methods=['POST'])
 def addTwilioSong():
     return addSong(json.loads(request.form['song']), request.form['phoneNumber'])
@@ -82,7 +91,6 @@ query - query for song to search
 phoneNumber - phone number who is inputting that song
 
 Gets the first song to search for and adds it to playlist db.
-Downloads the song in ~/Music directory with name songId-phoneumber.mp3
 '''
 @app.route('/queryAndAddSong')
 def inputSongqueryAndAddSong():
@@ -139,8 +147,7 @@ Gets the default playlist sorted in order of adding it to the queue.
 Returns jsoned list of songs as they are store in db.
 Key values for each song are:
 phoneNumber, date, link, songId, duration, songName, artistName
-Client can just play the song by finding the file (songId-phonNumber.mp3)
-in Musics directory
+Client is responsible for downloading the song.
 '''
 @app.route('/getPlayList')
 def getPlayList():
