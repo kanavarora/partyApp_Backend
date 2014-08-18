@@ -2,7 +2,7 @@ import os
 from flask import Flask, request, redirect, session
 #from flask.ext.pymongo import PyMongo
 import pymongo
-import db
+#import db
 import datetime
 from bson import json_util
 import json
