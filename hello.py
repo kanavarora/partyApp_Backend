@@ -46,16 +46,6 @@ def hii():
     return str(post_id)
 
 '''
-Only to be called from localhost verison of the app. NOTHING ELSE.
-Downloads the song in ~/Music directory with name songId-phoneumber.mp3
-'''
-@app.route('/downloadSong', methods=['POST'])
-def downloadSong():
-    song = Song.from_export(json.loads(request.form['song']), gsClient.connection)
-    song.download(song_name = song.id + "-" + request.form['phoneNumber'])
-    return song.id
-
-'''
 Creates a new song from the response and adds it to the db.
 Response is a python data structure
 '''
